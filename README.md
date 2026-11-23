@@ -33,3 +33,9 @@ Contributions and bug reports are welcome. See LICENSE for terms.
 ## Domain quality scoring
 
 Run `python valuation.py example.com example.ai`. The tool reports a transparent 0–100 heuristic based on length, extension, digits, hyphens and letter composition. It does not predict sale prices or verify demand. Research comparable sales and trademark risks independently.
+
+## Market evidence analysis
+
+`python market_valuation.py example.com --sales sales.csv --buyers buyers.csv --monthly-searches 100 --cpc 2`
+
+Sales CSV columns: domain, price_usd, source, date. Buyer CSV requires website. Supply independently verified sales and keyword metrics from sources you are authorized to use. Numeric CLI values above are illustrative. The report filters sales by extension and length, deduplicates observations, reports median and range, counts candidate buyer websites and calculates a search-volume × CPC proxy. No live data feed or automatic dollar appraisal is included. Review semantic comparability and trademarks manually.
