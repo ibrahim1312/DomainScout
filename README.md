@@ -45,3 +45,7 @@ Sales CSV columns: domain, price_usd, source, date. Buyer CSV requires website. 
 Run `python dashboard.py examples/portfolio.csv --output report.html` and open report.html in your browser. The standalone report ranks domains by heuristic quality, displays score bars and flags invalid entries. No server or API key is required.
 
 See CONTRIBUTING.md and SECURITY.md for project policies.
+
+## Web interface
+
+Open `docs/index.html` locally for interactive bulk domain scoring and CSV export. To publish, enable GitHub Pages in repository Settings → Pages → Deploy from a branch → main → /docs. The web interface accepts ASCII domain names and runs locally without a backend.
