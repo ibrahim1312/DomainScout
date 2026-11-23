@@ -39,3 +39,9 @@ Run `python valuation.py example.com example.ai`. The tool reports a transparent
 `python market_valuation.py example.com --sales sales.csv --buyers buyers.csv --monthly-searches 100 --cpc 2`
 
 Sales CSV columns: domain, price_usd, source, date. Buyer CSV requires website. Supply independently verified sales and keyword metrics from sources you are authorized to use. Numeric CLI values above are illustrative. The report filters sales by extension and length, deduplicates observations, reports median and range, counts candidate buyer websites and calculates a search-volume × CPC proxy. No live data feed or automatic dollar appraisal is included. Review semantic comparability and trademarks manually.
+
+## Portfolio dashboard
+
+Run `python dashboard.py examples/portfolio.csv --output report.html` and open report.html in your browser. The standalone report ranks domains by heuristic quality, displays score bars and flags invalid entries. No server or API key is required.
+
+See CONTRIBUTING.md and SECURITY.md for project policies.
