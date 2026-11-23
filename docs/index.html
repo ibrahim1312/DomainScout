@@ -1,9 +1,109 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DomainScout — Domain evaluator</title><style>
-*{box-sizing:border-box}body{margin:0;background:#f1f5f9;color:#172033;font:16px system-ui}main{max-width:850px;margin:auto;padding:32px 18px}header{margin-bottom:28px}h1{font-size:36px;margin:0;color:#173b70}section{background:white;border:1px solid #dbe3ee;border-radius:16px;padding:24px;margin:16px 0}textarea{width:100%;min-height:110px;padding:12px;border:1px solid #94a3b8;border-radius:8px;font:inherit}button{background:#174b9c;color:white;border:0;border-radius:8px;padding:12px 20px;font:inherit;cursor:pointer;margin:12px 8px 0 0}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:10px;border-bottom:1px solid #e2e8f0;overflow-wrap:anywhere}progress{width:100%;accent-color:#174b9c}small{color:#475569}a{color:#174b9c}
-</style></head><body><main><header><h1>DomainScout</h1><p>Open-source domain portfolio intelligence</p><a href="https://github.com/ibrahim1312/DomainScout">Source code · MIT license</a></header><section><h2>Evaluate your domains</h2><label for="domains">Enter one domain per line or separate with commas.</label><textarea id="domains" placeholder="example.com&#10;example.ai"></textarea><button id="evaluate">Analyze domains</button><button id="export" disabled>Export CSV</button><p><small>Local browser analysis. No data is sent to a server. Scores are lexical heuristics, not monetary appraisals.</small></p></section><section><h2>Portfolio results</h2><p id="summary" role="status">Enter domains to begin.</p><div style="overflow:auto"><table><thead><tr><th>Domain</th><th>Score / 100</th><th>Quality</th></tr></thead><tbody id="results"></tbody></table></div><p id="errors"></p></section></main><script>
-const byId=id=>document.getElementById(id);let results=[];
-function evaluate(raw){const domain=raw.trim().toLowerCase().replace(/\.$/,'');const labels=domain.split('.');if(domain.length>253||labels.length<2||!labels.every(x=>/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(x)))return null;const name=labels[0],n=name.length,tld=labels.at(-1);const score=(n<=6?30:n<=10?25:n<=15?18:n<=22?8:2)+({com:25,org:17,net:16,io:16,ai:16}[tld]||10)+(!name.includes('-')?15:0)+(!/\d/.test(name)?15:0)+(/^[a-z]+$/.test(name)?15:0);return {domain,score};}
-byId('evaluate').onclick=()=>{const inputs=[...new Set(byId('domains').value.split(/[\s,]+/).filter(Boolean))];const invalid=[];results=[];for(const input of inputs){const r=evaluate(input);if(r)results.push(r);else invalid.push(input)}results=[...new Map(results.map(r=>[r.domain,r])).values()].sort((a,b)=>b.score-a.score);byId('results').replaceChildren();for(const r of results){const tr=document.createElement('tr');for(const v of [r.domain,String(r.score)]){const td=document.createElement('td');td.textContent=v;tr.append(td)}const td=document.createElement('td'),bar=document.createElement('progress');bar.max=100;bar.value=r.score;bar.setAttribute('aria-label',r.domain+' quality');td.append(bar);tr.append(td);byId('results').append(tr)}byId('summary').textContent=results.length+' valid domains'+(results.length?' · Average '+(results.reduce((s,r)=>s+r.score,0)/results.length).toFixed(1):'');byId('errors').textContent=invalid.length?'Invalid or unsupported names: '+invalid.join(', '):'';byId('export').disabled=!results.length};
-byId('export').onclick=()=>{const blob=new Blob(['domain,quality_score\n'+results.map(r=>r.domain+','+r.score).join('\n')],{type:'text/csv'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='domainscout.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
-</script></body></html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#102d24">
+  <meta name="description" content="Estimate domain resale scenarios, compare portfolios, and model net proceeds.">
+  <title>DomainScout — Domain Valuation</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap top-inner">
+      <a class="brand" href="./"><span class="brand-mark" aria-hidden="true">D</span>DomainScout</a>
+      <nav aria-label="Main navigation"><a href="#portfolio">Portfolio</a><a href="#method">Methodology</a><a href="https://github.com/ibrahim1312/DomainScout">GitHub ↗</a></nav>
+    </div>
+  </header>
+  <main class="wrap">
+    <section class="hero" aria-labelledby="page-title">
+      <div class="hero-copy">
+        <h1 id="page-title">Domain<br class="desktop"> valuation</h1>
+        <p>Compare names, estimate retail price ranges, and see how fees affect what you keep.</p>
+      </div>
+      <form id="analyze" class="entry">
+        <label for="domains">Domains to analyze</label>
+        <textarea id="domains" rows="3" placeholder="example.com&#10;example.ai" aria-describedby="analyze-feedback" spellcheck="false"></textarea>
+        <div class="entry-actions">
+          <button type="submit" class="primary">Analyze domains <span aria-hidden="true">↗</span></button>
+          <button id="demo" class="quiet" type="button">Load examples</button>
+        </div>
+        <p id="analyze-feedback" role="status">Separate domains with commas or new lines.</p>
+      </form>
+    </section>
+    <section id="portfolio" aria-labelledby="portfolio-title">
+      <div class="section-heading">
+        <h2 id="portfolio-title">Portfolio</h2>
+        <button type="button" class="outlined" id="export" disabled>Export CSV <span aria-hidden="true">↓</span></button>
+      </div>
+      <div class="summary">
+        <div><span>Domains analyzed</span><strong id="count">0</strong></div>
+        <div><span>Average quality</span><strong id="average">—</strong></div>
+        <div><span>With comparable sales</span><strong id="priced">0</strong></div>
+      </div>
+      <p id="empty" class="panel empty" hidden>Analyze a domain to see its valuation.</p>
+      <div id="workspace" hidden>
+        <div class="table-wrap panel" tabindex="0" aria-label="Portfolio results">
+          <table>
+            <thead><tr><th scope="col">Domain</th><th scope="col">Quality</th><th scope="col">Retail range</th><th scope="col">Evidence</th></tr></thead>
+            <tbody id="results"></tbody>
+          </table>
+        </div>
+        <article class="detail" aria-labelledby="domain-title">
+          <div class="section-heading detail-heading"><h2 id="domain-title"></h2><span class="badge" id="evidence"></span></div>
+          <div class="detail-grid">
+            <section class="panel pricing" aria-labelledby="pricing-title">
+              <h3 id="pricing-title">Estimated retail value</h3>
+              <strong class="estimate" id="estimate"></strong><span class="currency">USD</span>
+              <p>Indicative asking price for a sale to an end buyer.</p>
+              <div class="range" id="range" aria-hidden="true"><span></span></div>
+              <div class="range-labels"><span>Low <strong id="low"></strong></span><span>High <strong id="high"></strong></span></div>
+              <dl class="evidence-metrics">
+                <div><dt>Comparable sales</dt><dd id="comp-count"></dd></div>
+                <div><dt>Median sold price</dt><dd id="comp-median"></dd></div>
+                <div><dt>Sales weight</dt><dd id="weight"></dd></div>
+              </dl>
+            </section>
+            <section class="panel costs" aria-labelledby="costs-title">
+              <h3 id="costs-title">Net proceeds</h3>
+              <div class="cost-inputs">
+                <label for="cost">Purchase price ($)<input type="number" id="cost" min="0" max="100000000" step="0.01" value="10"></label>
+                <label for="renewal">Annual renewal ($)<input type="number" id="renewal" min="0" max="1000000" step="0.01" value="12"></label>
+                <label for="years">Renewals paid<input type="number" id="years" min="0" max="100" step="1" value="1"></label>
+                <label for="commission">Commission (%)<input type="number" id="commission" min="0" max="100" step="0.1" value="15"></label>
+              </div>
+              <dl>
+                <div><dt>After commission</dt><dd id="proceeds"></dd></div>
+                <div><dt>Break-even sale</dt><dd id="break-even"></dd></div>
+                <div class="net"><dt>Estimated profit</dt><dd id="net"></dd></div>
+              </dl>
+            </section>
+            <section class="panel" aria-labelledby="quality-title">
+              <div class="section-heading compact"><h3 id="quality-title">Domain quality</h3><strong id="score"></strong></div>
+              <div id="breakdown"></div>
+            </section>
+            <section class="panel" aria-labelledby="sales-title">
+              <h3 id="sales-title">Comparable sales</h3>
+              <form id="evidence-form">
+                <label for="sales">One sale per line: domain | USD price | source</label>
+                <textarea id="sales" rows="3" spellcheck="false" aria-describedby="sales-feedback"></textarea>
+                <button type="submit" class="outlined">Apply sales</button>
+                <p id="sales-feedback" role="status"></p>
+              </form>
+              <ul class="matched-sales" id="matched-sales"></ul>
+            </section>
+          </div>
+        </article>
+      </div>
+    </section>
+    <details class="panel method" id="method">
+      <summary>How the estimate is calculated</summary>
+      <p>DomainScout starts with a USD baseline for the extension and adjusts it for lexical quality. This is a heuristic for a retail asking-price scenario. An actual sale can occur outside the displayed range, and a domain may never sell.</p>
+      <p>Each comparable needs a source, the same suffix after the first label, and a first label within five characters of the target. Repeated names are excluded. The sales median contributes 17% per sale, up to 85%. Smaller samples use wider price ranges. The site does not verify sources, check trademarks, measure demand, or retrieve live sales.</p>
+      <p>Estimated profit subtracts acquisition cost, renewals, and commission from the midpoint. Cost assumptions apply to the current scenario across domains. Domain lists and inputs are processed in your browser.</p>
+    </details>
+    <footer>DomainScout <a href="https://github.com/ibrahim1312/DomainScout/blob/main/LICENSE">MIT license</a></footer>
+  </main>
+</body>
+</html>

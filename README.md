@@ -48,4 +48,11 @@ See CONTRIBUTING.md and SECURITY.md for project policies.
 
 ## Web interface
 
-Open `docs/index.html` locally for interactive bulk domain scoring and CSV export. To publish, enable GitHub Pages in repository Settings → Pages → Deploy from a branch → main → /docs. The web interface accepts ASCII domain names and runs locally without a backend.
+[Open DomainScout](https://ibrahim1312.github.io/DomainScout/) or open docs/index.html locally.
+
+- Analyze multiple domains and export quality scores and USD ranges as CSV.
+- Enter independently checked comparable sales for each domain as: domain | USD price | source.
+- Estimate break-even and profit after acquisition, renewals and commission.
+- Review the lexical quality breakdown, range and comparable median. Estimates are indicative retail scenarios based on a heuristic and any supplied evidence. Inputs stay in the browser.
+
+For a fork, enable GitHub Pages from main and the /docs folder.
