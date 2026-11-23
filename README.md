@@ -29,3 +29,7 @@ DNS and RDAP results do not prove registration availability or market value. Pro
 - Portfolio reporting and follow-up scheduling
 
 Contributions and bug reports are welcome. See LICENSE for terms.
+
+## Domain quality scoring
+
+Run `python valuation.py example.com example.ai`. The tool reports a transparent 0–100 heuristic based on length, extension, digits, hyphens and letter composition. It does not predict sale prices or verify demand. Research comparable sales and trademark risks independently.
