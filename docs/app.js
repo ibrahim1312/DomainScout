@@ -22,6 +22,87 @@ const serviceWords = /(?:construction|renovation|builders|repair|pharmacy|plumbi
 const geographicWords = /^(?:rochester|hobart|newyork|sanfrancisco|london|paris|dublin|stockholm|casablanca|dubai|miami|chicago|boston|sweden|morocco)|(?:newyork|sanfrancisco|london|paris|stockholm|dubai|miami|chicago|boston)$/;
 const shortCountrySuffix = /^(?:co|com|org|net|ac|gov)\.[a-z]{2}$/;
 
+const marketTerms = new Set((
+  "accounting agency agent agents analytics app architecture art assistant auto autos bakery bank beauty bike bikes " +
+  "booking broker brokers build builder builders building cafe camping car cars care cargo catering cats chatbot " +
+  "church clean cleaning clinic clinics cloud coach code coding coffee commerce community company computer construction " +
+  "consulting contracting copilot cybersecurity data daycare delivery dental dentist design development digital doctor " +
+  "doctors dog dogs ecommerce education electrician electric energy engineering estate events finance fitness flights " +
+  "flowers food garden gardening gear glass gogreen grocery group health healthcare heating help hiring home homes " +
+  "hosting hotel hotels house houses immigration insurance investing investments job jobs kitchen kitchens lab labs " +
+  "land law lawyer lawyers ledger legal loans locksmith logistics mail market marketplace marketing media medicine " +
+  "mobile mortgage movers music network news nursing office online parts pets pet pharmacy photo photography pizza " +
+  "plumbing plumber podcast print printing property publishing realestate recruitment renovation rentals repair repairs " +
+  "restaurant restaurants roofing sales salon school secure security senior services shipping shop shopping skin " +
+  "software solar sponsor sports stock storage studio support tailor tailors tax taxi teaching team technology tech " +
+  "therapy tools trade training translation travel truck trucks tutor vacation veterinary video visa warehouse " +
+  "web wedding wellness windows work yoga voiture maison immobilier agence sante nettoyage voyage emploi " +
+  "travaux entreprenad bygg elbil bil jobb vård frisör si ai gpt api"
+).split(" "));
+const commonTerms = new Set((
+  "access active alpha animal atlas beach berry best better bird black bloom blue bold bright brook central centre " +
+  "cedar city clear coast connect core country creative daily direct easy earth east express fair fallow fast first " +
+  "flow forest fresh future global gold good green grove guide high hill horizon hub international island key kids " +
+  "king lake landing leaf life light link lion local main map match mind modern mountain move nation natural " +
+  "nature next north nova oak ocean open orange organic park path peak pine place planet point prime quick radio " +
+  "rapid red remote resource ridge river road rock rose route royal safe search silver simple smart social south " +
+  "spark spring star stone summit sun system systemic test time top trail tree trust united urban valley value " +
+  "venture village virtual vista voice signal worker networker water wave west white wild win winter wise world zen zed"
+).split(" "));
+const places = new Set((
+  "amsterdam berlin boston brussels california casablanca chicago dakhla dubai dublin france germany glasgow " +
+  "gothenburg hobart istanbul london losangeles madrid malmo marrakech melbourne miami milan montreal morocco " +
+  "newyork oslo ouarzazate paris rabat rochester rome sanfrancisco seattle stockholm sweden sydney tangier toronto"
+).split(" "));
+const wordConnectors = new Set(["and","for","of","the","with","to","de","du","des","la","le"]);
+const shortSuffixes = new Set(["ai","si","gpt","api"]);
+
+function termKind(term) {
+  if (places.has(term)) return "place";
+  if (marketTerms.has(term)) return "market";
+  if (commonTerms.has(term)) return "word";
+  return wordConnectors.has(term) ? "connector" : null;
+}
+
+function splitMeaningfulWords(segment) {
+  const best = Array(segment.length+1).fill(null);
+  best[0] = [];
+  for (let start=0;start<segment.length;start++) {
+    if (!best[start]) continue;
+    for (let end=start+2;end<=segment.length;end++) {
+      const term = segment.slice(start,end);
+      const kind = termKind(term);
+      if (!kind) continue;
+      if (shortSuffixes.has(term) && start>0 && end!==segment.length) continue;
+      const sequence = [...best[start],{term,kind}];
+      if (!best[end] || sequence.length<best[end].length) best[end] = sequence;
+    }
+  }
+  const match = best.at(-1);
+  if (!match || match[0].kind==="connector" || match.at(-1).kind==="connector") return [];
+  return match;
+}
+
+function findNameMeaning(label,type) {
+  const segments = label.split(/[-0-9]+/).filter(Boolean);
+  const terms = segments.flatMap(splitMeaningfulWords);
+  const substantive = terms.filter(word => word.kind!=="connector");
+  const longWord = substantive.some(word => word.term.length>=3 && !shortSuffixes.has(word.term));
+  const hasMarketTerm = substantive.some(word => word.kind==="market" || word.kind==="place");
+  let uplift = 1;
+  if (longWord && hasMarketTerm) uplift = substantive.length>1 ? 1.65 : 1.40;
+  else if (longWord) uplift = substantive.length>1 ? 1.38 : 1.24;
+
+  // Make search terms available even when the first part is a brand or personal name.
+  const service = serviceWords.exec(label)?.[0];
+  if (uplift===1 && service && label.length>service.length) {
+    substantive.push({term:service,kind:"market"});
+    uplift = type==="personal" ? 1.15 : 1.20;
+  }
+  if (type==="personal") uplift = Math.min(uplift,1.24);
+  return {terms:substantive.map(word=>word.term),uplift};
+}
+
 function domainParts(domain) {
   const labels = domain.split(".");
   const tail = labels.slice(-2).join(".");
@@ -57,6 +138,7 @@ function evaluate(domain, sales) {
   const {label,suffix,subdomain} = domainParts(domain);
   const autoType = domainType(label,suffix);
   const type = selectedTypes.get(domain) ?? autoType;
+  const meaning = findNameMeaning(label,type);
   const n = label.length;
   const extension = suffix.split(".").at(-1);
   const lengthPoints = n<=4 ? 30 : n<=8 ? 26 : n<=12 ? 22 : n<=18 ? 15 : n<=24 ? 8 : 2;
@@ -76,7 +158,8 @@ function evaluate(domain, sales) {
   const businessComBase = n<=12 ? 500 : 400;
   const extensionBaseline = descriptiveCom ? businessComBase :
     (extensionBases.get(extension) ?? 38)*lengthFactor*formatFactor;
-  const baseline = extensionBaseline*domainTypes.get(type).factor;
+  const semanticFactor = descriptiveCom ? 1 : meaning.uplift;
+  const baseline = extensionBaseline*domainTypes.get(type).factor*semanticFactor;
   const qualified = subdomain ? [] : sales.filter(sale => {
     const comparable = domainParts(sale.domain);
     return sale.domain!==domain && !comparable.subdomain && comparable.suffix===suffix &&
@@ -98,7 +181,7 @@ function evaluate(domain, sales) {
   const spread = commercialScenario ? .375 : prices.length>=5 ? .33 : prices.length>=2 ? .45 : .58;
   const quickShare = commercialScenario ? .625 : .20;
   const round = (value,step=5) => Math.max(step,Math.round(value/step)*step);
-  return {domain,label,suffix,subdomain,type,breakdown,quality,qualified,observed,weight,
+  return {domain,label,suffix,subdomain,type,meaning,semanticFactor,descriptiveCom,breakdown,quality,qualified,observed,weight,
     low:estimate===null?null:round(estimate*(1-spread)),
     estimate:estimate===null?null:round(estimate),
     high:estimate===null?null:round(estimate*(1+spread)),
@@ -188,6 +271,11 @@ function render() {
   $("domain-type").value = selectedTypes.get(row.domain) ?? "auto";
   $("type-detected").textContent = row.subdomain ? "Subdomain · no resale estimate" :
     (selectedTypes.has(row.domain) ? "Manual type · " : "Detected · ")+domainTypes.get(row.type).name;
+  const recognized = row.meaning.terms.join(" · ");
+  const meaningLabel = row.descriptiveCom ? "Pricing already reflects the descriptive business name" :
+    row.semanticFactor>1 ? "+"+Math.round((row.semanticFactor-1)*100)+"% to starting price" :
+    "No words recognized for a pricing adjustment";
+  $("name-meaning").textContent = row.subdomain ? "" : recognized ? recognized+" · "+meaningLabel : meaningLabel;
   $("quick").textContent = usd(row.quick);
   $("price-note").textContent = row.subdomain ?
     "Resale estimates are for registrable domain names." :

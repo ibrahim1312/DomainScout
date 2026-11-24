@@ -7,7 +7,7 @@
   <meta name="description" content="Estimate domain resale scenarios, compare portfolios, and model net proceeds.">
   <title>DomainScout — Domain Valuation</title>
   <link rel="stylesheet" href="./style.css?v=20261124-valuation">
-  <script src="./app.js?v=20261124-commercial" defer></script>
+  <script src="./app.js?v=20261124-meaning" defer></script>
   <script src="./buyers.js?v=20261124-valuation" defer></script>
 </head>
 <body>
@@ -87,6 +87,7 @@
                 <label for="domain-type">Domain type</label>
                 <select id="domain-type"><option value="auto">Auto-detect</option></select>
                 <p id="type-detected"></p>
+                <p id="name-meaning"></p>
               </div>
               <div id="breakdown"></div>
             </section>
@@ -128,7 +129,7 @@
     </section>
     <details class="panel method" id="method">
       <summary>How the estimate is calculated</summary>
-      <p>DomainScout starts with conservative USD baselines for extensions. It adjusts for length, domain type, hyphens and digits. For short, clean .com names describing a business service, the model uses a higher starting price. With no supplied sales for those names, the quick-sale scenario matches the low end of the range. Other quick-sale scenarios use 20% of the retail midpoint. Both are heuristics. An actual sale can fall outside the range, and a domain may never sell.</p>
+      <p>DomainScout starts with conservative USD baselines for extensions. It adjusts for length, domain type, hyphens and digits. Recognized words, places, and commercial terms can raise the starting price across extensions. The Domain quality card lists recognized terms and the adjustment. The word list is limited and the adjustment estimates usefulness from the name alone. Short, clean descriptive business names on .com already include this factor in their higher starting price. With no supplied sales for those names, the quick-sale scenario matches the low end of the range. Other quick-sale scenarios use 20% of the retail midpoint. Both are heuristics. An actual sale can fall outside the range, and a domain may never sell.</p>
       <p>Comparables need a source, the same suffix, similar length, and a similar use of digits or hyphens. Repeated names are excluded. The model blends the sales median and baseline using a capped price ratio and a weight of 12% per sale, up to 68%. Smaller samples use wider ranges. The site does not verify sources, check trademarks, measure demand, or retrieve live sales.</p>
       <p>Estimated profit subtracts acquisition cost, renewals, and commission from the midpoint. Cost assumptions apply to the current scenario across domains. Valuation inputs stay in your browser. Buyer lookup sends generated variants to Google Public DNS.</p>
     </details>
