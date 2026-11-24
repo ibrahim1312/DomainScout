@@ -192,16 +192,18 @@ function evaluate(domain, sales) {
   const researchAdjustment = retailCenter===null ? 1 : boundedRatio(retailCenter,16)**researchWeight;
   const auctionSignal = auctionMedian===null || retailCenter!==null ? 1 :
     boundedRatio(auctionMedian,8)**Math.min(.16,auctionWeight*.6);
-  const estimate = subdomain ? null : baseline*userAdjustment*researchAdjustment*auctionSignal;
+  const marketEstimate = subdomain ? null : baseline*userAdjustment*researchAdjustment*auctionSignal;
+  const negotiationMargin = !subdomain && (meaning.uplift>1 || descriptiveCom) ? .10 : 0;
+  const estimate = marketEstimate===null ? null : marketEstimate*(1+negotiationMargin);
   const marketSignals = prices.length+autoRetail.length+auctionPrices.length;
   const spread = prices.length>=5 ? .33 : prices.length>=2 ? .45 : marketSignals ? .50 : descriptiveCom ? .375 : .58;
-  const quickBasis = estimate*(descriptiveCom?.625:.38);
+  const quickBasis = marketEstimate*(descriptiveCom?.625:.38);
   const auctionQuick = auctionMedian===null ? quickBasis :
     Math.max(quickBasis*.35,Math.min(quickBasis*4,auctionMedian))**auctionWeight*quickBasis**(1-auctionWeight);
-  const quick = Math.min(estimate*(1-spread),auctionQuick);
+  const quick = Math.min(marketEstimate*(1-spread),auctionQuick);
   const weight = suppliedWeight+researchWeight+(auctionSignal===1?0:Math.min(.16,auctionWeight*.6));
   const round = (value,step=5) => Math.max(step,Math.round(value/step)*step);
-  return {domain,label,suffix,subdomain,type,meaning,semanticFactor,retailFactor,descriptiveCom,breakdown,quality,qualified,references,observed,auctionMedian,weight,
+  return {domain,label,suffix,subdomain,type,meaning,semanticFactor,retailFactor,negotiationMargin,descriptiveCom,breakdown,quality,qualified,references,observed,auctionMedian,weight,
     low:estimate===null?null:round(estimate*(1-spread)),
     estimate:estimate===null?null:round(estimate),
     high:estimate===null?null:round(estimate*(1+spread)),
@@ -299,6 +301,8 @@ function render() {
   $("name-meaning").textContent = row.subdomain ? "" : recognized ? recognized+" · "+meaningLabel : meaningLabel;
   $("retail-adjustment").textContent = row.retailFactor>1 && !row.subdomain ?
     "Additional asking-price adjustment: ×"+row.retailFactor.toFixed(2).replace(/0$/,"") : "";
+  $("negotiation-margin").textContent = row.negotiationMargin ?
+    "+"+Math.round(100*row.negotiationMargin)+"% asking-price room for negotiation" : "";
   $("quick").textContent = usd(row.quick);
   $("price-note").textContent = row.subdomain ?
     "Resale estimates are for registrable domain names." :

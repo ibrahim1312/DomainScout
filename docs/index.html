@@ -8,7 +8,7 @@
   <title>DomainScout — Domain Valuation</title>
   <link rel="stylesheet" href="./style.css?v=20261124-sales">
   <script src="./market.js?v=20261124-sales" defer></script>
-  <script src="./app.js?v=20261124-sales" defer></script>
+  <script src="./app.js?v=20261124-asking" defer></script>
   <script src="./buyers.js?v=20261124-valuation" defer></script>
 </head>
 <body>
@@ -91,6 +91,7 @@
                 <p id="type-detected"></p>
                 <p id="name-meaning"></p>
                 <p id="retail-adjustment"></p>
+                <p id="negotiation-margin"></p>
               </div>
               <div id="breakdown"></div>
             </section>
@@ -136,7 +137,7 @@
     </section>
     <details class="panel method" id="method">
       <summary>How the estimate is calculated</summary>
-      <p>The retail asking range starts from name quality and extension. A small reference set reviewed in November 2026 adjusts selected construction, pharmacy, pet care and AI/SI cases. Each listed record links to its source. Historical or loosely related sales are context only. Reported sale prices can differ from final amounts paid.</p>
+      <p>The retail asking range starts from name quality and extension. A small reference set reviewed in November 2026 adjusts selected construction, pharmacy, pet care and AI/SI cases. Each listed record links to its source. Historical or loosely related sales are context only. Recognizable names receive 10% room for negotiation in the asking range. The quick-sale scenario uses the estimate before this margin. Reported sale prices can differ from final amounts paid.</p>
       <p>Retail and auction evidence have different roles. Reported retail sales influence the asking range with capped weight. Auction results mainly inform the quick-sale scenario. User-supplied sales must have the same suffix, similar length and format, and a source. The word list and sample are limited, and sale outcomes can fall outside the range.</p>
       <p>Estimated profit subtracts acquisition cost, renewals, and commission from the midpoint. Cost assumptions apply to the current scenario across domains. Valuation inputs stay in your browser. Buyer lookup sends generated variants to Google Public DNS.</p>
     </details>
