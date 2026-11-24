@@ -6,8 +6,9 @@
   <meta name="theme-color" content="#102d24">
   <meta name="description" content="Estimate domain resale scenarios, compare portfolios, and model net proceeds.">
   <title>DomainScout — Domain Valuation</title>
-  <link rel="stylesheet" href="./style.css?v=20261124-valuation">
-  <script src="./app.js?v=20261124-meaning" defer></script>
+  <link rel="stylesheet" href="./style.css?v=20261124-sales">
+  <script src="./market.js?v=20261124-sales" defer></script>
+  <script src="./app.js?v=20261124-sales" defer></script>
   <script src="./buyers.js?v=20261124-valuation" defer></script>
 </head>
 <body>
@@ -63,7 +64,8 @@
               <div class="quick"><span>Quick-sale scenario</span><strong id="quick"></strong></div>
               <dl class="evidence-metrics">
                 <div><dt>Comparable sales</dt><dd id="comp-count"></dd></div>
-                <div><dt>Median sold price</dt><dd id="comp-median"></dd></div>
+                <div><dt>Supplied sales median</dt><dd id="comp-median"></dd></div>
+                <div><dt>Published auction median</dt><dd id="auction-median"></dd></div>
                 <div><dt>Sales weight</dt><dd id="weight"></dd></div>
               </dl>
             </section>
@@ -88,6 +90,7 @@
                 <select id="domain-type"><option value="auto">Auto-detect</option></select>
                 <p id="type-detected"></p>
                 <p id="name-meaning"></p>
+                <p id="retail-adjustment"></p>
               </div>
               <div id="breakdown"></div>
             </section>
@@ -100,6 +103,10 @@
                 <p id="sales-feedback" role="status"></p>
               </form>
               <ul class="matched-sales" id="matched-sales"></ul>
+              <details id="published-records" class="published-records" hidden>
+                <summary>Published sales and auction results</summary>
+                <ul class="matched-sales" id="published-sales"></ul>
+              </details>
             </section>
           </div>
           <section class="panel buyer-panel" aria-labelledby="buyer-title">
@@ -129,8 +136,8 @@
     </section>
     <details class="panel method" id="method">
       <summary>How the estimate is calculated</summary>
-      <p>DomainScout starts with conservative USD baselines for extensions. It adjusts for length, domain type, hyphens and digits. Recognized words, places, and commercial terms can raise the starting price across extensions. The Domain quality card lists recognized terms and the adjustment. The word list is limited and the adjustment estimates usefulness from the name alone. Short, clean descriptive business names on .com already include this factor in their higher starting price. With no supplied sales for those names, the quick-sale scenario matches the low end of the range. Other quick-sale scenarios use 20% of the retail midpoint. Both are heuristics. An actual sale can fall outside the range, and a domain may never sell.</p>
-      <p>Comparables need a source, the same suffix, similar length, and a similar use of digits or hyphens. Repeated names are excluded. The model blends the sales median and baseline using a capped price ratio and a weight of 12% per sale, up to 68%. Smaller samples use wider ranges. The site does not verify sources, check trademarks, measure demand, or retrieve live sales.</p>
+      <p>The retail asking range starts from name quality and extension. A small reference set reviewed in November 2026 adjusts selected construction, pharmacy, pet care and AI/SI cases. Each listed record links to its source. Historical or loosely related sales are context only. Reported sale prices can differ from final amounts paid.</p>
+      <p>Retail and auction evidence have different roles. Reported retail sales influence the asking range with capped weight. Auction results mainly inform the quick-sale scenario. User-supplied sales must have the same suffix, similar length and format, and a source. The word list and sample are limited, and sale outcomes can fall outside the range.</p>
       <p>Estimated profit subtracts acquisition cost, renewals, and commission from the midpoint. Cost assumptions apply to the current scenario across domains. Valuation inputs stay in your browser. Buyer lookup sends generated variants to Google Public DNS.</p>
     </details>
     <footer>DomainScout <a href="https://github.com/ibrahim1312/DomainScout/blob/main/LICENSE">MIT license</a></footer>

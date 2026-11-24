@@ -159,34 +159,55 @@ function evaluate(domain, sales) {
   const extensionBaseline = descriptiveCom ? businessComBase :
     (extensionBases.get(extension) ?? 38)*lengthFactor*formatFactor;
   const semanticFactor = descriptiveCom ? 1 : meaning.uplift;
-  const baseline = extensionBaseline*domainTypes.get(type).factor*semanticFactor;
+  const family = salesFamily(label,suffix,type);
+  const readablePremium = !descriptiveCom && formatFactor===1 && n<=21 && meaning.uplift>1 && type!=="personal";
+  // Higher retail asking scenarios for meaningful names. Exact sales remain separate evidence.
+  const retailFactor = readablePremium ? suffix==="com" ? 1.7 : suffix==="si" && family==="si-agent" ? 4.8 : 1.25 : 1;
+  const baseline = extensionBaseline*domainTypes.get(type).factor*semanticFactor*retailFactor;
   const qualified = subdomain ? [] : sales.filter(sale => {
     const comparable = domainParts(sale.domain);
     return sale.domain!==domain && !comparable.subdomain && comparable.suffix===suffix &&
       Math.abs(comparable.label.length-n)<=Math.min(4,Math.max(1,Math.ceil(n*.28))) &&
       /[0-9-]/.test(comparable.label)===/[0-9-]/.test(label);
   });
+  const suppliedDomains = new Set(qualified.map(sale=>sale.domain));
+  const references = subdomain ? [] : relatedSales(domain,label,suffix,type)
+    .filter(sale=>!suppliedDomains.has(sale.domain));
+  const autoRetail = references.filter(sale=>sale.channel==="retail");
+  const auctionPrices = references.filter(sale=>sale.channel==="auction").map(sale=>sale.price).sort((a,b)=>a-b);
   const prices = qualified.map(sale => sale.price).sort((a,b) => a-b);
-  const quantile = p => {
-    const index = (prices.length-1)*p;
-    const lower = Math.floor(index);
-    return prices[lower]+(prices[Math.ceil(index)]-prices[lower])*(index-lower);
-  };
-  const observed = prices.length ? quantile(.5) : null;
-  const weight = Math.min(.68,prices.length*.12);
-  const lowerEvidence = (observed ?? baseline)*(prices.length>=3?.82:1);
-  const anchor = Math.max(baseline/4,Math.min(baseline*12,lowerEvidence));
-  const estimate = subdomain ? null : baseline*(anchor/baseline)**weight;
-  const commercialScenario = descriptiveCom && !prices.length;
-  const spread = commercialScenario ? .375 : prices.length>=5 ? .33 : prices.length>=2 ? .45 : .58;
-  const quickShare = commercialScenario ? .625 : .20;
+  function median(values) {
+    if (!values.length) return null;
+    return (values[Math.floor((values.length-1)/2)]+values[Math.ceil((values.length-1)/2)])/2;
+  }
+  const observed = median(prices);
+  const auctionMedian = median(auctionPrices);
+  const suppliedWeight = Math.min(.68,prices.length*.14);
+  const researchWeight = (1-suppliedWeight)*Math.min(.36,autoRetail.reduce((sum,sale)=>sum+sale.relevance*.34,0));
+  const auctionWeight = auctionMedian===null ? 0 : Math.min(.35,auctionPrices.length*.14);
+  // Prevent one reported sale from taking over the estimate. Auction prices inform the quick scenario.
+  const boundedRatio = (price,cap) => Math.min(cap,Math.max(.2,price/baseline));
+  const userAdjustment = observed===null ? 1 : boundedRatio(observed,20)**suppliedWeight;
+  const retailCenter = median(autoRetail.map(sale=>sale.price).sort((a,b)=>a-b));
+  const researchAdjustment = retailCenter===null ? 1 : boundedRatio(retailCenter,16)**researchWeight;
+  const auctionSignal = auctionMedian===null || retailCenter!==null ? 1 :
+    boundedRatio(auctionMedian,8)**Math.min(.16,auctionWeight*.6);
+  const estimate = subdomain ? null : baseline*userAdjustment*researchAdjustment*auctionSignal;
+  const marketSignals = prices.length+autoRetail.length+auctionPrices.length;
+  const spread = prices.length>=5 ? .33 : prices.length>=2 ? .45 : marketSignals ? .50 : descriptiveCom ? .375 : .58;
+  const quickBasis = estimate*(descriptiveCom?.625:.38);
+  const auctionQuick = auctionMedian===null ? quickBasis :
+    Math.max(quickBasis*.35,Math.min(quickBasis*4,auctionMedian))**auctionWeight*quickBasis**(1-auctionWeight);
+  const quick = Math.min(estimate*(1-spread),auctionQuick);
+  const weight = suppliedWeight+researchWeight+(auctionSignal===1?0:Math.min(.16,auctionWeight*.6));
   const round = (value,step=5) => Math.max(step,Math.round(value/step)*step);
-  return {domain,label,suffix,subdomain,type,meaning,semanticFactor,descriptiveCom,breakdown,quality,qualified,observed,weight,
+  return {domain,label,suffix,subdomain,type,meaning,semanticFactor,retailFactor,descriptiveCom,breakdown,quality,qualified,references,observed,auctionMedian,weight,
     low:estimate===null?null:round(estimate*(1-spread)),
     estimate:estimate===null?null:round(estimate),
     high:estimate===null?null:round(estimate*(1+spread)),
-    quick:estimate===null?null:round(estimate*quickShare),
-    evidence:subdomain?"Subdomain":prices.length>=5?"5+ supplied sales":prices.length?"Limited sales":"No sales data"};
+    quick:estimate===null?null:round(quick),
+    evidence:subdomain?"Subdomain":prices.length>=5?"5+ supplied sales":prices.length?"Supplied sales":
+      marketSignals?"Limited market sample":references.length?"Historical context":"Name-based estimate"};
 }
 
 function parseEvidence(value) {
@@ -241,7 +262,7 @@ function render() {
   $("count").textContent = portfolio.length;
   $("average").textContent = portfolio.length ?
     (portfolio.reduce((total,item) => total+item.quality,0)/portfolio.length).toFixed(1) : "—";
-  $("priced").textContent = portfolio.filter(item => item.qualified.length).length;
+  $("priced").textContent = portfolio.filter(item => item.qualified.length || item.references.length).length;
   $("export").disabled = !portfolio.length;
   const body = $("results");
   body.replaceChildren();
@@ -276,11 +297,14 @@ function render() {
     row.semanticFactor>1 ? "+"+Math.round((row.semanticFactor-1)*100)+"% to starting price" :
     "No words recognized for a pricing adjustment";
   $("name-meaning").textContent = row.subdomain ? "" : recognized ? recognized+" · "+meaningLabel : meaningLabel;
+  $("retail-adjustment").textContent = row.retailFactor>1 && !row.subdomain ?
+    "Additional asking-price adjustment: ×"+row.retailFactor.toFixed(2).replace(/0$/,"") : "";
   $("quick").textContent = usd(row.quick);
   $("price-note").textContent = row.subdomain ?
     "Resale estimates are for registrable domain names." :
-    row.qualified.length ? "Indicative asking price using the comparables you supplied." :
-    "Asking-price scenario based on name characteristics and extension.";
+    row.qualified.length ? "Indicative asking price using the comparables you supplied and any relevant published sales." :
+    row.references.some(sale=>sale.channel!=="context") ? "Indicative asking price calibrated against a small sample of reported sales." :
+    "Name-based asking scenario. Closely matching recent sales may be unavailable.";
   showBuyerPanel(row);
   $("estimate").textContent = usd(row.estimate);
   $("low").textContent = usd(row.low);
@@ -289,8 +313,21 @@ function render() {
   if (row.estimate!==null) {
     $("range").style.setProperty("--position",100*(row.estimate-row.low)/Math.max(1,row.high-row.low)+"%");
   }
-  $("comp-count").textContent = row.qualified.length;
-  $("comp-median").textContent = row.observed===null?"—":usd(row.observed);
+  $("comp-count").textContent = row.qualified.length+row.references.length;
+  $("comp-median").textContent = usd(row.observed);
+  $("auction-median").textContent = usd(row.auctionMedian);
+  $("published-sales").replaceChildren(...row.references.map(sale=>{
+    const item = document.createElement("li");
+    const link = document.createElement("a");
+    link.href = sale.url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = sale.domain;
+    const channel = sale.channel==="context" ? "Context only" : sale.channel==="auction" ? "Auction" : "Reported retail";
+    item.append(link,element("span"," "+usd(sale.price)+" · "+channel+" · "+sale.date+" · "+sale.source));
+    return item;
+  }));
+  $("published-records").hidden = !row.references.length;
   $("weight").textContent = Math.round(row.weight*100)+"%";
   $("score").textContent = row.quality+"/100";
   $("sales").value = evidenceByDomain.get(row.domain)?.input ?? "";
@@ -372,9 +409,9 @@ $("evidence-form").addEventListener("submit",event => {
 ["cost","renewal","years","commission"].forEach(id => $(id).addEventListener("input",renderNet));
 $("export").addEventListener("click",() => {
   const rows = [
-    "domain,type,quality_score,retail_low_usd,retail_estimate_usd,retail_high_usd,quick_sale_scenario_usd,evidence,comparable_count,comparable_median_usd",
+    "domain,type,quality_score,retail_low_usd,retail_estimate_usd,retail_high_usd,quick_sale_scenario_usd,evidence,supplied_comparable_count,supplied_median_usd,published_reference_count,published_auction_median_usd",
     ...portfolio.map(row => [row.domain,domainTypes.get(row.type).name,row.quality,row.low,row.estimate,row.high,row.quick,row.evidence,
-      row.qualified.length,row.observed ?? ""].join(","))
+      row.qualified.length,row.observed ?? "",row.references.length,row.auctionMedian ?? ""].join(","))
   ];
   const url = URL.createObjectURL(new Blob([rows.join("\r\n")+"\r\n"],{type:"text/csv;charset=utf-8"}));
   const link = document.createElement("a");

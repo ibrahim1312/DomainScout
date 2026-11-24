@@ -138,3 +138,6 @@ footer{display:flex;justify-content:space-between;gap:15px;padding:22px 0;color:
 .buyer-table td:first-child{overflow-wrap:anywhere}
 .dns-found{color:var(--accent);font-weight:650}
 @media(max-width:660px){.buyer-fields{grid-template-columns:1fr}.buyer-fields button{justify-self:start}}
+
+.published-records{margin-top:14px;border-top:1px solid var(--line);padding-top:10px;font-size:.83rem}
+.published-records summary{cursor:pointer;color:var(--accent);font-weight:700}
