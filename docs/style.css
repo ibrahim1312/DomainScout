@@ -120,3 +120,21 @@ footer{display:flex;justify-content:space-between;gap:15px;padding:22px 0;color:
   .summary span{font-size:.72rem}
   .badge{white-space:normal}
 }
+.type-control{display:grid;grid-template-columns:1fr 1.4fr;gap:5px 10px;align-items:center;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:12px}
+.type-control label,.buyer-fields label{font-size:.82rem;font-weight:650}
+.type-control select{width:100%;padding:6px 8px;border:1px solid #a6b2a3;border-radius:7px;background:#fffef8;color:var(--ink);font:inherit}
+.type-control p{grid-column:1/-1;font-size:.77rem;color:var(--muted)}
+.quick{display:flex;justify-content:space-between;gap:10px;margin-top:9px;color:#d1e0d3;font-size:.81rem}
+.quick strong{color:var(--lime)}
+.buyer-panel{margin-top:14px}
+.buyer-panel .compact{gap:10px}
+.buyer-panel .compact a{font-size:.85rem;color:var(--accent)}
+.buyer-fields{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end}
+.buyer-fields input{display:block;margin-top:4px;font-size:.87rem}
+.buyer-note,#buyer-status,#buyer-empty{color:var(--muted);font-size:.82rem;margin-top:8px}
+#buyer-status{font-weight:650}
+.buyer-toggle{display:flex;gap:8px;align-items:center;font-size:.83rem;margin:8px 0}
+.buyer-toggle input{width:auto;accent-color:var(--accent)}
+.buyer-table td:first-child{overflow-wrap:anywhere}
+.dns-found{color:var(--accent);font-weight:650}
+@media(max-width:660px){.buyer-fields{grid-template-columns:1fr}.buyer-fields button{justify-self:start}}

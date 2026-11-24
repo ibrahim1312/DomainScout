@@ -50,9 +50,10 @@ See CONTRIBUTING.md and SECURITY.md for project policies.
 
 [Open DomainScout](https://ibrahim1312.github.io/DomainScout/) or open docs/index.html locally.
 
-- Analyze multiple domains and export quality scores and USD ranges as CSV.
+- Analyze multiple domains, adjust the automatically detected type, and export quality scores and USD ranges as CSV. A conservative retail range and a separate quick-sale scenario are shown.
 - Enter independently checked comparable sales for each domain as: domain | USD price | source.
 - Estimate break-even and profit after acquisition, renewals and commission.
+- Find leads by generating exact names on other extensions and variants with extra words, hyphens and numbers. The optional DNS check sends those variants to Google Public DNS; the results distinguish address records from unverified names. Visit matched sites to identify actual businesses or follow the web search links.
 - Review the lexical quality breakdown, range and comparable median. Estimates are indicative retail scenarios based on a heuristic and any supplied evidence. Inputs stay in the browser.
 
 For a fork, enable GitHub Pages from main and the /docs folder.

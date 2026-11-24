@@ -8,6 +8,7 @@
   <title>DomainScout — Domain Valuation</title>
   <link rel="stylesheet" href="./style.css">
   <script src="./app.js" defer></script>
+  <script src="./buyers.js" defer></script>
 </head>
 <body>
   <header class="top">
@@ -46,7 +47,7 @@
       <div id="workspace" hidden>
         <div class="table-wrap panel" tabindex="0" aria-label="Portfolio results">
           <table>
-            <thead><tr><th scope="col">Domain</th><th scope="col">Quality</th><th scope="col">Retail range</th><th scope="col">Evidence</th></tr></thead>
+            <thead><tr><th scope="col">Domain</th><th scope="col">Type</th><th scope="col">Quality</th><th scope="col">Retail range</th><th scope="col">Evidence</th></tr></thead>
             <tbody id="results"></tbody>
           </table>
         </div>
@@ -56,9 +57,10 @@
             <section class="panel pricing" aria-labelledby="pricing-title">
               <h3 id="pricing-title">Estimated retail value</h3>
               <strong class="estimate" id="estimate"></strong><span class="currency">USD</span>
-              <p>Indicative asking price for a sale to an end buyer.</p>
+              <p id="price-note"></p>
               <div class="range" id="range" aria-hidden="true"><span></span></div>
               <div class="range-labels"><span>Low <strong id="low"></strong></span><span>High <strong id="high"></strong></span></div>
+              <div class="quick"><span>Quick-sale scenario</span><strong id="quick"></strong></div>
               <dl class="evidence-metrics">
                 <div><dt>Comparable sales</dt><dd id="comp-count"></dd></div>
                 <div><dt>Median sold price</dt><dd id="comp-median"></dd></div>
@@ -81,6 +83,11 @@
             </section>
             <section class="panel" aria-labelledby="quality-title">
               <div class="section-heading compact"><h3 id="quality-title">Domain quality</h3><strong id="score"></strong></div>
+              <div class="type-control">
+                <label for="domain-type">Domain type</label>
+                <select id="domain-type"><option value="auto">Auto-detect</option></select>
+                <p id="type-detected"></p>
+              </div>
               <div id="breakdown"></div>
             </section>
             <section class="panel" aria-labelledby="sales-title">
@@ -94,14 +101,36 @@
               <ul class="matched-sales" id="matched-sales"></ul>
             </section>
           </div>
+          <section class="panel buyer-panel" aria-labelledby="buyer-title">
+            <div class="section-heading compact"><h3 id="buyer-title">Potential buyers</h3><a id="buyer-follow" target="_blank" rel="noopener noreferrer">Search for businesses ↗</a></div>
+            <form id="buyer-form">
+              <div class="buyer-fields">
+                <label for="buyer-words">Words in the domain<input id="buyer-words" maxlength="90" placeholder="Zed Construction"></label>
+                <label for="buyer-extras">Extra words to try<input id="buyer-extras" maxlength="90" placeholder="builders, contracting, group"></label>
+                <button type="submit" class="primary" id="buyer-run">Find potential buyers ↗</button>
+              </div>
+              <p class="buyer-note">Checks similar names through Google Public DNS when you click Find. A DNS match may be a parked site or a redirect. Open the site to check the business and its fit.</p>
+            </form>
+            <p id="buyer-status" role="status"></p>
+            <div id="buyer-results-wrap" hidden>
+              <label class="buyer-toggle"><input type="checkbox" id="buyer-confirmed" checked> Only names with address records</label>
+              <p id="buyer-empty"></p>
+              <div class="table-wrap buyer-table" tabindex="0" aria-label="Potential buyer domains">
+                <table>
+                  <thead><tr><th scope="col">Domain</th><th scope="col">Match</th><th scope="col">DNS status</th><th scope="col">Research</th></tr></thead>
+                  <tbody id="buyer-results"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
         </article>
       </div>
     </section>
     <details class="panel method" id="method">
       <summary>How the estimate is calculated</summary>
-      <p>DomainScout starts with a USD baseline for the extension and adjusts it for lexical quality. This is a heuristic for a retail asking-price scenario. An actual sale can occur outside the displayed range, and a domain may never sell.</p>
-      <p>Each comparable needs a source, the same suffix after the first label, and a first label within five characters of the target. Repeated names are excluded. The sales median contributes 17% per sale, up to 85%. Smaller samples use wider price ranges. The site does not verify sources, check trademarks, measure demand, or retrieve live sales.</p>
-      <p>Estimated profit subtracts acquisition cost, renewals, and commission from the midpoint. Cost assumptions apply to the current scenario across domains. Domain lists and inputs are processed in your browser.</p>
+      <p>DomainScout starts with conservative USD baselines for extensions. It adjusts for length, domain type, hyphens and digits. The quick-sale scenario is 20% of the retail midpoint. Both are heuristics. An actual sale can fall outside the range, and a domain may never sell.</p>
+      <p>Comparables need a source, the same suffix, similar length, and a similar use of digits or hyphens. Repeated names are excluded. The model blends the sales median and baseline using a capped price ratio and a weight of 12% per sale, up to 68%. Smaller samples use wider ranges. The site does not verify sources, check trademarks, measure demand, or retrieve live sales.</p>
+      <p>Estimated profit subtracts acquisition cost, renewals, and commission from the midpoint. Cost assumptions apply to the current scenario across domains. Valuation inputs stay in your browser. Buyer lookup sends generated variants to Google Public DNS.</p>
     </details>
     <footer>DomainScout <a href="https://github.com/ibrahim1312/DomainScout/blob/main/LICENSE">MIT license</a></footer>
   </main>
