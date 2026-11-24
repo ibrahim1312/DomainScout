@@ -70,8 +70,13 @@ function evaluate(domain, sales) {
   const quality = breakdown.reduce((sum,[,score]) => sum+score,0);
   const lengthFactor = n<=4 ? 1.65 : n<=8 ? 1.2 : n<=12 ? 1 : n<=18 ? .68 : n<=24 ? .42 : .25;
   const formatFactor = (label.includes("-") ? .68 : 1) * (/\d/.test(label) ? .58 : 1);
-  // Conservative asking-price assumptions. A real sale or quick exit is not guaranteed.
-  const baseline = (extensionBases.get(extension) ?? 38)*lengthFactor*formatFactor*domainTypes.get(type).factor;
+  const descriptiveCom = suffix==="com" && formatFactor===1 && n<=18 &&
+    serviceWords.test(label) && (type==="business" || type==="local");
+  // Asking-price assumptions for compact, descriptive business names on .com.
+  const businessComBase = n<=12 ? 500 : 400;
+  const extensionBaseline = descriptiveCom ? businessComBase :
+    (extensionBases.get(extension) ?? 38)*lengthFactor*formatFactor;
+  const baseline = extensionBaseline*domainTypes.get(type).factor;
   const qualified = subdomain ? [] : sales.filter(sale => {
     const comparable = domainParts(sale.domain);
     return sale.domain!==domain && !comparable.subdomain && comparable.suffix===suffix &&
@@ -89,13 +94,15 @@ function evaluate(domain, sales) {
   const lowerEvidence = (observed ?? baseline)*(prices.length>=3?.82:1);
   const anchor = Math.max(baseline/4,Math.min(baseline*12,lowerEvidence));
   const estimate = subdomain ? null : baseline*(anchor/baseline)**weight;
-  const spread = prices.length>=5?.33:prices.length>=2?.45:.58;
+  const commercialScenario = descriptiveCom && !prices.length;
+  const spread = commercialScenario ? .375 : prices.length>=5 ? .33 : prices.length>=2 ? .45 : .58;
+  const quickShare = commercialScenario ? .625 : .20;
   const round = (value,step=5) => Math.max(step,Math.round(value/step)*step);
   return {domain,label,suffix,subdomain,type,breakdown,quality,qualified,observed,weight,
     low:estimate===null?null:round(estimate*(1-spread)),
     estimate:estimate===null?null:round(estimate),
     high:estimate===null?null:round(estimate*(1+spread)),
-    quick:estimate===null?null:round(estimate*.20),
+    quick:estimate===null?null:round(estimate*quickShare),
     evidence:subdomain?"Subdomain":prices.length>=5?"5+ supplied sales":prices.length?"Limited sales":"No sales data"};
 }
 
@@ -185,7 +192,7 @@ function render() {
   $("price-note").textContent = row.subdomain ?
     "Resale estimates are for registrable domain names." :
     row.qualified.length ? "Indicative asking price using the comparables you supplied." :
-    "Conservative asking-price scenario based on the name and extension alone.";
+    "Asking-price scenario based on name characteristics and extension.";
   showBuyerPanel(row);
   $("estimate").textContent = usd(row.estimate);
   $("low").textContent = usd(row.low);
